@@ -8,15 +8,16 @@ datasource db {
 }
 
 model User {
-  userId        Int      @id @default(autoincrement())
+  userId    Int      @id @default(autoincrement())
   email     String   @unique
   password  String
-  role      String   // 'admin', 'staff', etc.
+  role      String // 'admin', 'staff', etc.
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   sales     Sale[]
   purchases Purchase[]
+  auditLog  AuditLog[]
 }
 
 model Category {
@@ -24,22 +25,26 @@ model Category {
   name      String   @unique
   createdAt DateTime @default(now())
 
-  products  Product[]
+  products Product[]
 }
 
 model Product {
-  id          Int       @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   name        String
   description String?
   price       Float
   quantity    Int
-  image       String?   // File path to image
+  image       String? // File path to image
   categoryId  Int
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime @default(now())
 
-  category    Category  @relation(fields: [categoryId], references: [id])
-  sales       Sale[]
-  purchases   Purchase[]
+  category     Category       @relation(fields: [categoryId], references: [id])
+  sales        Sale[]
+  purchases    Purchase[]
+  SalesItem    SalesItem[]
+  PurchaseItem PurchaseItem[]
+  inventoryLogs InventoryLog[]  // 
+
 }
 
 model Customer {
@@ -50,7 +55,7 @@ model Customer {
   address   String?
   createdAt DateTime @default(now())
 
-  sales     Sale[]
+  sales Sale[]
 }
 
 model Supplier {
@@ -65,31 +70,31 @@ model Supplier {
 }
 
 model Sale {
-  id          Int       @id @default(autoincrement())
+  id               Int      @id @default(autoincrement())
   purchasingUserId Int
-  productId   Int // ID of the purchased product
-  customerId  Int?
-  quantity    Int
-  totalPrice  Float
-  createdAt   DateTime  @default(now())
+  customerId       Int?
+  totalPrice       Float
+  createdAt        DateTime @default(now())
 
-  purchasingUser User      @relation(fields: [purchasingUserId], references: [userId])
-  purchasedProduct Product @relation(fields: [productId], references: [id])
-  customer    Customer? @relation(fields: [customerId], references: [id])
+  purchasingUser User        @relation(fields: [purchasingUserId], references: [userId])
+  customer       Customer?   @relation(fields: [customerId], references: [id])
+  salesItems     SalesItem[]
+  Product        Product?    @relation(fields: [productId], references: [id])
+  productId      Int?
 }
 
 model Purchase {
-  id          Int       @id @default(autoincrement())
-  userId      Int
-  productId   Int
-  supplierId  Int
-  quantity    Int
-  totalCost   Float
-  createdAt   DateTime  @default(now())
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  supplierId Int
+  totalCost  Float
+  createdAt  DateTime @default(now())
 
-  user        User      @relation(fields: [userId], references: [userId])
-  product     Product   @relation(fields: [productId], references: [id])
-  supplierEntity Supplier  @relation(fields: [supplierId], references: [id])
+  user           User           @relation(fields: [userId], references: [userId])
+  supplierEntity Supplier       @relation(fields: [supplierId], references: [id])
+  purchaseItems  PurchaseItem[]
+  Product        Product?       @relation(fields: [productId], references: [id])
+  productId      Int?
 }
 
 model Report {
@@ -99,6 +104,67 @@ model Report {
   createdAt DateTime @default(now())
 }
 
+model SalesItem {
+  id        Int   @id @default(autoincrement())
+  saleId    Int
+  productId Int
+  quantity  Int
+  price     Float
 
+  sale    Sale    @relation(fields: [saleId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model PurchaseItem {
+  id         Int   @id @default(autoincrement())
+  purchaseId Int
+  productId  Int
+  quantity   Int
+  cost       Float
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+}
+
+
+model InventoryLog {
+  id          Int       @id @default(autoincrement())
+  productId   Int
+  changeType  String    // e.g. 'sale', 'purchase', 'manual'
+  quantity    Int       // How much stock was added or removed
+  reason      String?   // Optional: extra details or notes
+  createdAt   DateTime  @default(now())
+
+  product     Product   @relation(fields: [productId], references: [id])
+}
+
+model AuditLog {
+  id          Int       @id @default(autoincrement())
+  userId      Int?
+  action      String    // e.g., "LOGIN", "LOGOUT", "CREATE_PRODUCT", etc.
+  details     String?
+  ipAddress   String?
+  createdAt   DateTime  @default(now())
+
+  user        User?     @relation(fields: [userId], references: [userId])
+}
+
+model Notification {
+  id          Int       @id @default(autoincrement())
+  message     String
+  type        String    // e.g., "LOW_STOCK", "ERROR", "INFO"
+  isRead      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+}
+
+model Settings {
+  id          Int       @id @default(1) // Single row for app config
+  appName     String    @default("Inventory Management System")
+  theme       String?   // e.g., "light", "dark"
+  lowStockThreshold Int @default(5)
+  updatedAt   DateTime  @updatedAt
+}
+
+//npx prisma generate
 //npx prisma db push
 //npx prisma studio
