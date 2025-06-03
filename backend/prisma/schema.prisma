@@ -47,28 +47,6 @@ model Product {
 
 }
 
-model Customer {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String?  @unique
-  phone     String?
-  address   String?
-  createdAt DateTime @default(now())
-
-  sales Sale[]
-}
-
-model Supplier {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String?
-  phone     String?
-  address   String?
-  createdAt DateTime @default(now())
-
-  purchases Purchase[]
-}
-
 model Sale {
   id               Int      @id @default(autoincrement())
   purchasingUserId Int
@@ -127,16 +105,7 @@ model PurchaseItem {
 }
 
 
-model InventoryLog {
-  id          Int       @id @default(autoincrement())
-  productId   Int
-  changeType  String    // e.g. 'sale', 'purchase', 'manual'
-  quantity    Int       // How much stock was added or removed
-  reason      String?   // Optional: extra details or notes
-  createdAt   DateTime  @default(now())
 
-  product     Product   @relation(fields: [productId], references: [id])
-}
 
 model AuditLog {
   id          Int       @id @default(autoincrement())
@@ -147,14 +116,6 @@ model AuditLog {
   createdAt   DateTime  @default(now())
 
   user        User?     @relation(fields: [userId], references: [userId])
-}
-
-model Notification {
-  id          Int       @id @default(autoincrement())
-  message     String
-  type        String    // e.g., "LOW_STOCK", "ERROR", "INFO"
-  isRead      Boolean   @default(false)
-  createdAt   DateTime  @default(now())
 }
 
 model Settings {
