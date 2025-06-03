@@ -31,11 +31,11 @@ model User {
 model Role {
   role_id   Int     @id @default(autoincrement())
   role_type String  @unique
-  createdAt DateTime
+  createdAt DateTime @default(now())
   deletedAt DateTime?
   createdBy String?
   deletedBy String?
-  isDeleted Boolean
+  isDeleted Boolean @default(false)
 
   // Relations
   users     User[]
@@ -67,7 +67,7 @@ model Product {
   image          String?
   isDeleted      Boolean           @default(false)
   createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
   categoryId     Int
 
   // Relations
@@ -88,7 +88,7 @@ model Sale {
   notes             String?
   isDeleted         Boolean         @default(false)
   createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   // Relations
   user              User            @relation("SaleUser", fields: [userId], references: [id])
@@ -107,7 +107,7 @@ model Purchase {
   notes             String?
   isDeleted         Boolean          @default(false)
   createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
   // Relations
   user              User             @relation("PurchaseUser", fields: [userId], references: [id])
@@ -121,11 +121,11 @@ model ProductSale {
   saleId         Int
   sale_quantity  Int
   sale_price     Float
-  createdAt      DateTime
+  createdAt      DateTime @default(now())
   deletedAt      DateTime?
   createdBy      String?
   deletedBy      String?
-  isDeleted      Boolean
+  isDeleted      Boolean  @default(false)
 
   // Relations
   product        Product  @relation(fields: [productId], references: [id])
@@ -138,11 +138,11 @@ model ProductPurchase {
   purchaseId        Int
   purchase_price    Float
   purchase_quantity Int
-  createdAt         DateTime
+  createdAt         DateTime @default(now())
   deletedAt         DateTime?
   createdBy         String?
   deletedBy         String?
-  isDeleted         Boolean
+  isDeleted         Boolean  @default(false)
 
   // Relations
   product           Product   @relation(fields: [productId], references: [id])
@@ -158,7 +158,3 @@ model Settings {
   taxRate           Float?    @default(0)
   updatedAt         DateTime  @updatedAt
 }
-
-//npx prisma generate
-//npx prisma db push
-//npx prisma studio

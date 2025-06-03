@@ -1,4 +1,4 @@
-const logger = require("../utils/logger");
+const logger = require("../utils/logger")
 
 const errorHandler = (err, req, res, next) => {
   logger.error("Error occurred:", {
@@ -8,7 +8,7 @@ const errorHandler = (err, req, res, next) => {
     method: req.method,
     ip: req.ip,
     userAgent: req.get("User-Agent"),
-  });
+  })
 
   // Prisma errors
   if (err.code === "P2002") {
@@ -16,7 +16,7 @@ const errorHandler = (err, req, res, next) => {
       success: false,
       message: "Duplicate entry. This record already exists.",
       error: process.env.NODE_ENV === "development" ? err.message : undefined,
-    });
+    })
   }
 
   if (err.code === "P2025") {
@@ -24,7 +24,7 @@ const errorHandler = (err, req, res, next) => {
       success: false,
       message: "Record not found.",
       error: process.env.NODE_ENV === "development" ? err.message : undefined,
-    });
+    })
   }
 
   // Validation errors
@@ -33,7 +33,7 @@ const errorHandler = (err, req, res, next) => {
       success: false,
       message: "Validation error",
       errors: err.details?.map((detail) => detail.message) || [err.message],
-    });
+    })
   }
 
   // JWT errors
@@ -41,14 +41,14 @@ const errorHandler = (err, req, res, next) => {
     return res.status(401).json({
       success: false,
       message: "Invalid token",
-    });
+    })
   }
 
   if (err.name === "TokenExpiredError") {
     return res.status(401).json({
       success: false,
       message: "Token expired",
-    });
+    })
   }
 
   // Default error
@@ -56,16 +56,16 @@ const errorHandler = (err, req, res, next) => {
     success: false,
     message: err.message || "Internal server error",
     error: process.env.NODE_ENV === "development" ? err.stack : undefined,
-  });
-};
+  })
+}
 
 const notFound = (req, res, next) => {
-  const error = new Error(`Not found - ${req.originalUrl}`);
-  error.status = 404;
-  next(error);
-};
+  const error = new Error(`Not found - ${req.originalUrl}`)
+  error.status = 404
+  next(error)
+}
 
 module.exports = {
   errorHandler,
   notFound,
-};
+}

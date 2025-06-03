@@ -1,10 +1,10 @@
-const { prisma } = require("./config/db");
-const logger = require("./utils/logger");
+const { prisma } = require("./config/db")
+const logger = require("./utils/logger")
 
 const healthCheck = async () => {
   try {
     // Check database connection
-    await prisma.$queryRaw`SELECT 1`;
+    await prisma.$queryRaw`SELECT 1`
 
     const health = {
       status: "healthy",
@@ -12,11 +12,11 @@ const healthCheck = async () => {
       uptime: process.uptime(),
       memory: process.memoryUsage(),
       database: "connected",
-    };
+    }
 
-    return health;
+    return health
   } catch (error) {
-    logger.error("Health check failed:", error);
+    logger.error("Health check failed:", error)
 
     return {
       status: "unhealthy",
@@ -25,8 +25,8 @@ const healthCheck = async () => {
       memory: process.memoryUsage(),
       database: "disconnected",
       error: error.message,
-    };
+    }
   }
-};
+}
 
-module.exports = healthCheck;
+module.exports = healthCheck

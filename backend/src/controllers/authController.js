@@ -1,19 +1,65 @@
-const jwt = require("jsonwebtoken");
+const userService = require("../services/userService")
+const logger = require("../utils/logger")
 
-const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-key";
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
+const register = async (req, res, next) => {
+  try {
+    const result = await userService.registerUser(req.body)
 
-const generateToken = (payload) => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-};
+    res.status(201).json({
+      success: true,
+      message: "User registered successfully",
+      data: result,
+    })
+  } catch (error) {
+    next(error)
+  }
+}
 
-const verifyToken = (token) => {
-  return jwt.verify(token, JWT_SECRET);
-};
+const login = async (req, res, next) => {
+  try {
+    const { email, password } = req.body
+    const result = await userService.loginUser(email, password)
+
+    res.json({
+      success: true,
+      message: "Login successful",
+      data: result,
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+const getProfile = async (req, res, next) => {
+  try {
+    const user = await userService.getUserProfile(req.user.id)
+
+    res.json({
+      success: true,
+      data: user,
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+const updateProfile = async (req, res, next) => {
+  try {
+    const user = await userService.updateUserProfile(req.user.id, req.body)
+
+    res.json({
+      success: true,
+      message: "Profile updated successfully",
+      data: user,
+    })
+  } catch (error) {
+    next(error)
+  }
+}
 
 module.exports = {
-  generateToken,
-  verifyToken,
-  JWT_SECRET,
-  JWT_EXPIRES_IN,
-};
+  register,
+  login,
+  getProfile,
+  updateProfile,
+}

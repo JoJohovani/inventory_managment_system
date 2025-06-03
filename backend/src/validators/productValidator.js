@@ -1,4 +1,4 @@
-const Joi = require("joi");
+const Joi = require("joi")
 
 const createProductSchema = Joi.object({
   name: Joi.string().min(2).max(100).required(),
@@ -11,7 +11,7 @@ const createProductSchema = Joi.object({
   minStock: Joi.number().integer().min(0),
   maxStock: Joi.number().integer().min(0),
   categoryId: Joi.number().integer().positive().required(),
-});
+})
 
 const updateProductSchema = Joi.object({
   name: Joi.string().min(2).max(100),
@@ -24,33 +24,33 @@ const updateProductSchema = Joi.object({
   minStock: Joi.number().integer().min(0),
   maxStock: Joi.number().integer().min(0),
   categoryId: Joi.number().integer().positive(),
-});
+})
 
 const validateCreateProduct = (req, res, next) => {
-  const { error } = createProductSchema.validate(req.body);
+  const { error } = createProductSchema.validate(req.body)
   if (error) {
     return res.status(400).json({
       success: false,
       message: "Validation error",
       errors: error.details.map((detail) => detail.message),
-    });
+    })
   }
-  next();
-};
+  next()
+}
 
 const validateUpdateProduct = (req, res, next) => {
-  const { error } = updateProductSchema.validate(req.body);
+  const { error } = updateProductSchema.validate(req.body)
   if (error) {
     return res.status(400).json({
       success: false,
       message: "Validation error",
       errors: error.details.map((detail) => detail.message),
-    });
+    })
   }
-  next();
-};
+  next()
+}
 
 module.exports = {
   validateCreateProduct,
   validateUpdateProduct,
-};
+}
