@@ -10,6 +10,7 @@ import {
      AlertCircle,
      Check
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import Button from '../../components/ui/button';
 import Input from '../../components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
@@ -43,35 +44,43 @@ const ProductsPage = () => {
                const response = await fetch('http://localhost:5000/api/products');
 
                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to fetch products');
+                    throw new Error('Failed to fetch products');
                }
 
-               const data = await response.json();
-               setProducts(data);
+               const result = await response.json();
+               setProducts(result.data || result);
+               setError(null);
           } catch (err) {
                setError(err.message);
+               toast.error('Failed to load products');
           } finally {
                setLoading(false);
           }
      };
+
      useEffect(() => {
           fetchProducts();
      }, [sortField, sortOrder]);
 
      const handleDelete = async (productId) => {
-          try {
-               setError(null);
-               const { error: deleteError } = await supabase
-                    .from('products')
-                    .delete()
-                    .eq('id', productId);
+          if (!window.confirm('Are you sure you want to delete this product?')) {
+               return;
+          }
 
-               if (deleteError) throw deleteError;
-               await fetchProducts();
+          try {
+               const response = await fetch(`http://localhost:5000/api/products/${productId}`, {
+                    method: 'DELETE'
+               });
+
+               if (!response.ok) {
+                    throw new Error('Failed to delete product');
+               }
+
+               toast.success('Product deleted successfully');
+               fetchProducts();
           } catch (err) {
                console.error('Error deleting product:', err);
-               setError('Failed to delete product. Please try again.');
+               toast.error('Failed to delete product');
           }
      };
 
@@ -83,11 +92,12 @@ const ProductsPage = () => {
 
           const matchesFilters =
                (!filterOptions.lowStock || product.quantity <= 10) &&
-               (!filterOptions.hasImage || product.image_url) &&
-               (!filterOptions.hasCategory || product.category_id);
+               (!filterOptions.hasImage || product.image) &&
+               (!filterOptions.hasCategory || product.categoryId);
 
           return matchesSearch && matchesFilters;
      });
+
      const handleSort = (field) => {
           if (sortField === field) {
                setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -102,10 +112,6 @@ const ProductsPage = () => {
      const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
      const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
      const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
-
-     const getSellingPrice = (purchasePrice) => {
-          return purchasePrice * 1.5;
-     };
 
      const getStatusBadge = (quantity) => {
           if (quantity === 0) {
@@ -218,7 +224,7 @@ const ProductsPage = () => {
 
                          {showSortMenu && (
                               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
-                                   {['name', 'price', 'quantity', 'created_at'].map((field) => (
+                                   {['name', 'price', 'quantity', 'createdAt'].map((field) => (
                                         <button
                                              key={field}
                                              className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center justify-between"
@@ -242,8 +248,8 @@ const ProductsPage = () => {
                               <TableRow>
                                    <TableHead>Product</TableHead>
                                    <TableHead>Category</TableHead>
-                                   <TableHead>Purchase Price</TableHead>
-                                   <TableHead>Selling Price</TableHead>
+                                   <TableHead>Price</TableHead>
+                                   <TableHead>Cost</TableHead>
                                    <TableHead>Quantity</TableHead>
                                    <TableHead>Status</TableHead>
                                    <TableHead className="text-right">Actions</TableHead>
@@ -263,9 +269,9 @@ const ProductsPage = () => {
                                              <TableCell>
                                                   <div className="flex items-center gap-3">
                                                        <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
-                                                            {product.image_url ? (
+                                                            {product.image ? (
                                                                  <img
-                                                                      src={product.image_url}
+                                                                      src={`http://localhost:5000${product.image}`}
                                                                       alt={product.name}
                                                                       className="w-full h-full object-cover"
                                                                  />
@@ -292,8 +298,8 @@ const ProductsPage = () => {
                                                   ${product.price.toFixed(2)}
                                              </TableCell>
 
-                                             <TableCell className="font-medium text-indigo-600">
-                                                  ${getSellingPrice(product.price).toFixed(2)}
+                                             <TableCell className="font-medium">
+                                                  ${product.cost?.toFixed(2) || 'N/A'}
                                              </TableCell>
 
                                              <TableCell>{product.quantity}</TableCell>

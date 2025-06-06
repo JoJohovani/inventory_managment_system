@@ -1,69 +1,70 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Tag, DollarSign, Hash, Upload, Image } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import Button from '../ui/button';
 import Input from '../ui/input';
 
-
-const NewProductModal = ({ isOpen, onClose, onSuccess }) => {
+const NewProductModal = ({ isOpen, onClose, onSuccess, editingProduct }) => {
      const [loading, setLoading] = useState(false);
      const [error, setError] = useState(null);
      const [categories, setCategories] = useState([]);
      const [formData, setFormData] = useState({
           name: '',
           description: '',
-          category_id: '',
+          categoryId: '',
           price: '',
+          cost: '',
           quantity: '',
-          image_url: '',
-          qr_code: ''
+          minStock: '',
+          maxStock: '',
+          sku: '',
+          barcode: ''
      });
 
      useEffect(() => {
-          fetchCategories();
-     }, []);
+          if (isOpen) {
+               fetchCategories();
+               if (editingProduct) {
+                    setFormData({
+                         name: editingProduct.name || '',
+                         description: editingProduct.description || '',
+                         categoryId: editingProduct.categoryId || '',
+                         price: editingProduct.price || '',
+                         cost: editingProduct.cost || '',
+                         quantity: editingProduct.quantity || '',
+                         minStock: editingProduct.minStock || '',
+                         maxStock: editingProduct.maxStock || '',
+                         sku: editingProduct.sku || '',
+                         barcode: editingProduct.barcode || ''
+                    });
+               } else {
+                    setFormData({
+                         name: '',
+                         description: '',
+                         categoryId: '',
+                         price: '',
+                         cost: '',
+                         quantity: '',
+                         minStock: '',
+                         maxStock: '',
+                         sku: '',
+                         barcode: ''
+                    });
+               }
+          }
+     }, [isOpen, editingProduct]);
 
      const fetchCategories = async () => {
           try {
-               setLoading(true);
                const response = await fetch('http://localhost:5000/api/categories');
-
                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error('Failed to fetch categories');
                }
-
-               const data = await response.json();
-               setCategories(data);
-               setError(null);
+               const result = await response.json();
+               setCategories(result.data || result);
           } catch (error) {
                console.error('Fetch error:', error);
-               setError(error.message);
-          } finally {
-               setLoading(false);
-          }
-     };
-
-     const handleImageUpload = async (file) => {
-          try {
-               // Create FormData object
-               const formData = new FormData();
-               formData.append('image', file);
-
-               // Upload to your own API endpoint
-               const response = await fetch('http://localhost:5000/api/upload', {
-                    method: 'POST',
-                    body: formData
-               });
-
-               if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Image upload failed');
-               }
-
-               const { imageUrl } = await response.json();
-               setFormData(prev => ({ ...prev, image_url: imageUrl }));
-
-          } catch (err) {
-               setError('Error uploading image: ' + err.message);
+               toast.error('Failed to load categories');
           }
      };
 
@@ -73,29 +74,39 @@ const NewProductModal = ({ isOpen, onClose, onSuccess }) => {
           setError(null);
 
           try {
-               const response = await fetch('http://localhost:5000/api/products', {
-                    method: 'POST',
+               const url = editingProduct 
+                    ? `http://localhost:5000/api/products/${editingProduct.id}`
+                    : 'http://localhost:5000/api/products';
+               
+               const method = editingProduct ? 'PUT' : 'POST';
+
+               const response = await fetch(url, {
+                    method,
                     headers: {
                          'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
                          ...formData,
                          price: parseFloat(formData.price),
+                         cost: formData.cost ? parseFloat(formData.cost) : null,
                          quantity: parseInt(formData.quantity),
-                         category_id: parseInt(formData.category_id)
+                         minStock: formData.minStock ? parseInt(formData.minStock) : null,
+                         maxStock: formData.maxStock ? parseInt(formData.maxStock) : null,
+                         categoryId: parseInt(formData.categoryId)
                     }),
                });
 
-               const data = await response.json();
-
                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to create product');
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to save product');
                }
 
+               toast.success(editingProduct ? 'Product updated successfully' : 'Product created successfully');
                onSuccess();
                onClose();
           } catch (err) {
                setError(err.message);
+               toast.error(err.message);
           } finally {
                setLoading(false);
           }
@@ -105,19 +116,42 @@ const NewProductModal = ({ isOpen, onClose, onSuccess }) => {
 
      return (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-               <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+               <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                     <div className="p-6 border-b border-gray-200">
-                         <h2 className="text-xl font-semibold">Add New Product</h2>
+                         <h2 className="text-xl font-semibold">
+                              {editingProduct ? 'Edit Product' : 'Add New Product'}
+                         </h2>
                     </div>
 
                     <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                         <Input
-                              label="Product Name"
-                              icon={<Package size={18} />}
-                              value={formData.name}
-                              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                              required
-                         />
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <Input
+                                   label="Product Name"
+                                   icon={<Package size={18} />}
+                                   value={formData.name}
+                                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                   required
+                              />
+
+                              <div>
+                                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Category
+                                   </label>
+                                   <select
+                                        value={formData.categoryId}
+                                        onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                                        className="w-full rounded-md border border-gray-300 shadow-sm p-2"
+                                        required
+                                   >
+                                        <option value="">Select a category</option>
+                                        {categories.map((category) => (
+                                             <option key={category.id} value={category.id}>
+                                                  {category.name}
+                                             </option>
+                                        ))}
+                                   </select>
+                              </div>
+                         </div>
 
                          <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -127,29 +161,11 @@ const NewProductModal = ({ isOpen, onClose, onSuccess }) => {
                                    value={formData.description}
                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                    className="w-full rounded-md border border-gray-300 shadow-sm p-2 min-h-[100px]"
+                                   placeholder="Enter product description"
                               />
                          </div>
 
-                         <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                   Category
-                              </label>
-                              <select
-                                   value={formData.category_id}
-                                   onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                                   className="w-full rounded-md border border-gray-300 shadow-sm p-2"
-                                   required
-                              >
-                                   <option value="">Select a category</option>
-                                   {categories.map((category) => (
-                                        <option key={category.id} value={category.id}>
-                                             {category.name}
-                                        </option>
-                                   ))}
-                              </select>
-                         </div>
-
-                         <div className="grid grid-cols-2 gap-4">
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <Input
                                    label="Price"
                                    type="number"
@@ -161,6 +177,17 @@ const NewProductModal = ({ isOpen, onClose, onSuccess }) => {
                               />
 
                               <Input
+                                   label="Cost (Optional)"
+                                   type="number"
+                                   step="0.01"
+                                   icon={<DollarSign size={18} />}
+                                   value={formData.cost}
+                                   onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+                              />
+                         </div>
+
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <Input
                                    label="Quantity"
                                    type="number"
                                    icon={<Hash size={18} />}
@@ -168,50 +195,40 @@ const NewProductModal = ({ isOpen, onClose, onSuccess }) => {
                                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                                    required
                               />
+
+                              <Input
+                                   label="Min Stock"
+                                   type="number"
+                                   icon={<Hash size={18} />}
+                                   value={formData.minStock}
+                                   onChange={(e) => setFormData({ ...formData, minStock: e.target.value })}
+                              />
+
+                              <Input
+                                   label="Max Stock"
+                                   type="number"
+                                   icon={<Hash size={18} />}
+                                   value={formData.maxStock}
+                                   onChange={(e) => setFormData({ ...formData, maxStock: e.target.value })}
+                              />
                          </div>
 
-                         <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                   Product Image
-                              </label>
-                              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                                   <div className="space-y-1 text-center">
-                                        {formData.image_url ? (
-                                             <div className="relative">
-                                                  <img
-                                                       src={formData.image_url}
-                                                       alt="Product"
-                                                       className="mx-auto h-32 w-32 object-cover rounded-md"
-                                                  />
-                                                  <button
-                                                       type="button"
-                                                       onClick={() => setFormData({ ...formData, image_url: '' })}
-                                                       className="absolute top-0 right-0 -mt-2 -mr-2 bg-red-100 text-red-600 rounded-full p-1"
-                                                  >
-                                                       ×
-                                                  </button>
-                                             </div>
-                                        ) : (
-                                             <div className="flex flex-col items-center">
-                                                  <Image size={24} className="text-gray-400" />
-                                                  <div className="flex text-sm text-gray-600">
-                                                       <label className="relative cursor-pointer rounded-md font-medium text-indigo-600 hover:text-indigo-500">
-                                                            <span>Upload a file</span>
-                                                            <input
-                                                                 type="file"
-                                                                 className="sr-only"
-                                                                 accept="image/*"
-                                                                 onChange={(e) => {
-                                                                      const file = e.target.files?.[0];
-                                                                      if (file) handleImageUpload(file);
-                                                                 }}
-                                                            />
-                                                       </label>
-                                                  </div>
-                                             </div>
-                                        )}
-                                   </div>
-                              </div>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <Input
+                                   label="SKU (Optional)"
+                                   icon={<Tag size={18} />}
+                                   value={formData.sku}
+                                   onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                                   placeholder="Product SKU"
+                              />
+
+                              <Input
+                                   label="Barcode (Optional)"
+                                   icon={<Hash size={18} />}
+                                   value={formData.barcode}
+                                   onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                                   placeholder="Product barcode"
+                              />
                          </div>
 
                          {error && (
@@ -220,16 +237,17 @@ const NewProductModal = ({ isOpen, onClose, onSuccess }) => {
                               </div>
                          )}
 
-                         <div className="flex justify-end gap-2">
-                              <Button variant="outline" onClick={onClose}>
+                         <div className="flex justify-end gap-2 pt-4">
+                              <Button variant="outline" onClick={onClose} disabled={loading}>
                                    Cancel
                               </Button>
                               <Button
                                    variant="primary"
                                    type="submit"
                                    isLoading={loading}
+                                   disabled={loading}
                               >
-                                   Create Product
+                                   {editingProduct ? 'Update Product' : 'Create Product'}
                               </Button>
                          </div>
                     </form>

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Tag } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import Button from '../ui/button';
 import Input from '../ui/input';
-// import { supabase } from '../../lib/supabase';
 
 const NewCategoryModal = ({ isOpen, onClose, onSuccess }) => {
      const [formData, setFormData] = useState({
@@ -34,17 +34,21 @@ const NewCategoryModal = ({ isOpen, onClose, onSuccess }) => {
 
                if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to create category');
+                    throw new Error(errorData.message || 'Failed to create category');
                }
 
+               toast.success('Category created successfully');
+               setFormData({ name: '', description: '' });
                onSuccess();
                onClose();
           } catch (err) {
                setError(err.message);
+               toast.error(err.message);
           } finally {
                setLoading(false);
           }
      };
+
      if (!isOpen) return null;
 
      return (
@@ -75,6 +79,7 @@ const NewCategoryModal = ({ isOpen, onClose, onSuccess }) => {
                                    value={formData.description}
                                    onChange={handleChange}
                                    className="w-full rounded-md border border-gray-300 p-2 shadow-sm min-h-[100px] focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                   placeholder="Enter category description"
                               />
                          </div>
 
@@ -91,7 +96,9 @@ const NewCategoryModal = ({ isOpen, onClose, onSuccess }) => {
                                    onClick={() => {
                                         onClose();
                                         setError(null);
+                                        setFormData({ name: '', description: '' });
                                    }}
+                                   disabled={loading}
                               >
                                    Cancel
                               </Button>
@@ -99,6 +106,7 @@ const NewCategoryModal = ({ isOpen, onClose, onSuccess }) => {
                                    type="submit"
                                    variant="primary"
                                    isLoading={loading}
+                                   disabled={loading}
                               >
                                    Create Category
                               </Button>

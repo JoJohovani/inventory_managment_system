@@ -20,6 +20,10 @@ const supplierRoutes = require("./routes/supplierRoutes")
 const reportRoutes = require("./routes/reportRoutes")
 const uploadRoutes = require("./routes/uploadRoutes")
 const seedRoutes = require("./routes/seedRoutes")
+const dashboardRoutes = require("./routes/dashboardRoutes")
+const salesOrderRoutes = require("./routes/salesOrderRoutes")
+const purchaseOrderRoutes = require("./routes/purchaseOrderRoutes")
+const reportsRoutes = require("./routes/reportsRoutes")
 
 const app = express()
 
@@ -79,6 +83,10 @@ app.use("/api/suppliers", supplierRoutes)
 app.use("/api/reports", reportRoutes)
 app.use("/api/upload", uploadRoutes)
 app.use("/api/seed", seedRoutes)
+app.use("/api/dashboard", dashboardRoutes)
+app.use("/api/sales-orders", salesOrderRoutes)
+app.use("/api/purchase-orders", purchaseOrderRoutes)
+app.use("/api/reports", reportsRoutes)
 
 // 404 handler
 app.use(notFound)
